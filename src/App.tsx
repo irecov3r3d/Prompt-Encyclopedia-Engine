@@ -3,15 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { BookOpen, Sparkles, BookText, Code, Layers, MousePointer2 } from 'lucide-react';
 import { TechniquesGrid } from './components/DataDisplays';
 import { TemplateLibrary } from './components/TemplateLibrary';
 import { FormulaBuilder } from './components/FormulaBuilder';
 import { SmartInput } from './components/SmartInput';
+import { FormulaState } from './types';
+
+const INITIAL_FORMULA: FormulaState = {
+  role: "world-class senior product designer with 15 years experience",
+  constraints: "Base answer only on facts. Never hallucinate.",
+  technique: "Chain-of-thought strategy",
+  examples: "",
+  task: "create a design system roadmap for a fintech mobile app",
+  format: "a structured markdown report with timeline"
+};
 
 export default function App() {
+  const [formula, setFormula] = useState<FormulaState>(INITIAL_FORMULA);
+
   return (
     <div className="min-h-screen selection:bg-brand-primary/30">
       {/* Background decoration */}
@@ -61,7 +73,7 @@ export default function App() {
            animate={{ opacity: 1, scale: 1 }}
            transition={{ delay: 0.3 }}
         >
-          <SmartInput />
+          <SmartInput onTransform={setFormula} />
         </motion.div>
 
         {/* Core Content sections */}
@@ -152,7 +164,7 @@ export default function App() {
 
           {/* Formula Builder */}
           <section id="builder">
-            <FormulaBuilder />
+            <FormulaBuilder state={formula} onStateChange={setFormula} />
           </section>
 
           <footer className="pt-20 border-t border-slate-800 text-center">

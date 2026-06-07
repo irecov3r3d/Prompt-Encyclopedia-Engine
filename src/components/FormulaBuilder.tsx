@@ -3,17 +3,12 @@ import { motion } from 'motion/react';
 import { Copy, Check, Terminal } from 'lucide-react';
 import { FormulaState } from '../types';
 
-const INITIAL_STATE: FormulaState = {
-  role: "world-class senior product designer with 15 years experience",
-  constraints: "Base answer only on facts. Never hallucinate.",
-  technique: "Chain-of-thought strategy",
-  examples: "",
-  task: "create a design system roadmap for a fintech mobile app",
-  format: "a structured markdown report with timeline"
-};
+interface FormulaBuilderProps {
+  state: FormulaState;
+  onStateChange: (state: FormulaState) => void;
+}
 
-export function FormulaBuilder() {
-  const [state, setState] = useState<FormulaState>(INITIAL_STATE);
+export function FormulaBuilder({ state, onStateChange }: FormulaBuilderProps) {
   const [copied, setCopied] = useState(false);
 
   const generatePrompt = () => {
@@ -32,6 +27,10 @@ After answering, critique your response in <thought> tags and improve if needed.
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const updateField = (field: keyof FormulaState, value: string) => {
+    onStateChange({ ...state, [field]: value });
+  };
+
   return (
     <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden relative">
       <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
@@ -41,11 +40,10 @@ After answering, critique your response in <thought> tags and improve if needed.
       <div className="relative z-10">
         <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
           <Terminal className="text-brand-secondary" />
-          Prompt Combiner Formula
+          Formula Real-Time Builder
         </h3>
         <p className="text-slate-400 text-sm mb-6 max-w-2xl">
-          The 2026 Stack: <strong>Role + Constraints + Technique + Examples + Task + Format</strong>. 
-          Fill the fields to generate a master-level prompt.
+          Refine the components below. Updates are synchronized across the 2026 Engine.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -55,7 +53,7 @@ After answering, critique your response in <thought> tags and improve if needed.
               <input 
                 type="text" 
                 value={state.role}
-                onChange={(e) => setState({...state, role: e.target.value})}
+                onChange={(e) => updateField('role', e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-primary outline-none transition-all"
               />
             </div>
@@ -64,22 +62,19 @@ After answering, critique your response in <thought> tags and improve if needed.
               <input 
                 type="text" 
                 value={state.constraints}
-                onChange={(e) => setState({...state, constraints: e.target.value})}
+                onChange={(e) => updateField('constraints', e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-primary outline-none transition-all"
               />
             </div>
             <div>
               <label className="block text-xs font-mono uppercase tracking-wider text-brand-secondary mb-1">Reasoning Technique</label>
-              <select 
+              <input 
+                type="text" 
                 value={state.technique}
-                onChange={(e) => setState({...state, technique: e.target.value})}
+                onChange={(e) => updateField('technique', e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-primary outline-none transition-all"
-              >
-                <option>Zero-shot instruction</option>
-                <option>Chain-of-thought strategy</option>
-                <option>Tree-of-thoughts exploration</option>
-                <option>ReAct loop</option>
-              </select>
+                placeholder="e.g. Chain-of-thought strategy"
+              />
             </div>
           </div>
 
@@ -88,7 +83,7 @@ After answering, critique your response in <thought> tags and improve if needed.
               <label className="block text-xs font-mono uppercase tracking-wider text-brand-secondary mb-1">Task / Objective</label>
               <textarea 
                 value={state.task}
-                onChange={(e) => setState({...state, task: e.target.value})}
+                onChange={(e) => updateField('task', e.target.value)}
                 rows={2}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-primary outline-none transition-all resize-none"
               />
@@ -98,7 +93,7 @@ After answering, critique your response in <thought> tags and improve if needed.
               <input 
                 type="text" 
                 value={state.format}
-                onChange={(e) => setState({...state, format: e.target.value})}
+                onChange={(e) => updateField('format', e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-primary outline-none transition-all"
               />
             </div>
@@ -109,16 +104,16 @@ After answering, critique your response in <thought> tags and improve if needed.
           <div className="absolute -inset-1 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-xl blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
           <div className="relative bg-slate-950 border border-slate-800 rounded-xl p-4">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-mono text-slate-500 uppercase">Generated Prompt</span>
+              <span className="text-xs font-mono text-slate-500 uppercase tracking-tighter">Generated Final Prompt</span>
               <button 
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium transition-colors shadow-lg"
               >
                 {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
             </div>
-            <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">
+            <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap leading-relaxed animate-in fade-in duration-500">
               {generatePrompt()}
             </pre>
           </div>

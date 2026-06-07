@@ -31,19 +31,40 @@ app.post("/api/transform-prompt", async (req, res) => {
     const systemInstruction = `You are a master of Prompt Engineering (2026 Edition). 
 Your task is to take a "loose", informal, or spoken request and transform it into a highly structured, professional prompt using the Prompt Combiner Formula.
 
-Formula: Role + Constraints + Technique + Examples + Task + Format + Self-Check
+Formula: Role + Constraints + Technique + Examples + Task + Format
 
-Output strictly the generated prompt string. Do not add any preamble or explanation.`;
+Output strictly a JSON object with the following keys:
+- role: string
+- constraints: string
+- technique: string
+- examples: string
+- task: string
+- format: string
+
+Do not add any preamble, explanation, or markdown code blocks. Just the raw JSON.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       contents: input,
       config: {
         systemInstruction,
+        responseMimeType: "application/json",
       },
     });
 
-    res.json({ prompt: response.text });
+    try {
+      const data = JSON.parse(response.text);
+      res.json(data);
+    } catch (e) {
+      res.json({ 
+        role: "Expert Prompt Engineer",
+        constraints: "Be precise and structured.",
+        technique: "Chain-of-thought",
+        examples: "",
+        task: response.text,
+        format: "detailed report"
+      });
+    }
   } catch (error: any) {
     console.error("Error transforming prompt:", error);
     res.status(500).json({ error: error.message || "Failed to transform prompt" });

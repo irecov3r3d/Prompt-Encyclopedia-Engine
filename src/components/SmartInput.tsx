@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mic, Keyboard, Send, Sparkles, Loader2, StopCircle } from 'lucide-react';
+import { Mic, Loader2, StopCircle, Sparkles } from 'lucide-react';
+import { FormulaState } from '../types';
 
-export function SmartInput() {
+interface SmartInputProps {
+  onTransform: (state: FormulaState) => void;
+}
+
+export function SmartInput({ onTransform }: SmartInputProps) {
   const [input, setInput] = useState('');
   const [isDictating, setIsDictating] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [transformedPrompt, setTransformedPrompt] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    // Check for speech recognition support
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
@@ -25,14 +29,8 @@ export function SmartInput() {
         handleTransform(transcript);
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsDictating(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsDictating(false);
-      };
+      recognitionRef.current.onerror = () => setIsDictating(false);
+      recognitionRef.current.onend = () => setIsDictating(false);
     }
   }, []);
 
@@ -40,6 +38,7 @@ export function SmartInput() {
     if (!textToTransform.trim()) return;
     
     setIsProcessing(true);
+    setShowSuccess(false);
     try {
       const response = await fetch('/api/transform-prompt', {
         method: 'POST',
@@ -48,8 +47,10 @@ export function SmartInput() {
       });
       
       const data = await response.json();
-      if (data.prompt) {
-        setTransformedPrompt(data.prompt);
+      if (data && !data.error) {
+        onTransform(data);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
       }
     } catch (error) {
       console.error('Error transforming prompt:', error);
@@ -62,20 +63,11 @@ export function SmartInput() {
     if (isDictating) {
       recognitionRef.current?.stop();
     } else {
-      setTransformedPrompt('');
+      setShowSuccess(false);
       setInput('');
       recognitionRef.current?.start();
       setIsDictating(true);
     }
-  };
-
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleTransform(input);
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
   };
 
   return (
@@ -107,7 +99,6 @@ export function SmartInput() {
                 ? 'bg-red-500 text-white animate-pulse' 
                 : 'hover:bg-slate-800 text-slate-400 hover:text-white'
               }`}
-              title={isDictating ? "Stop Recording" : "Start Dictation"}
             >
               {isDictating ? <StopCircle size={24} /> : <Mic size={24} />}
             </button>
@@ -123,14 +114,14 @@ export function SmartInput() {
       </div>
 
       <AnimatePresence>
-        {(isDictating || transformedPrompt) && (
+        {(isDictating || showSuccess) && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="overflow-hidden"
+            className="flex justify-center"
           >
-            {isDictating && (
+            {isDictating ? (
               <div className="flex items-center gap-4 px-6 py-3 bg-brand-primary/5 border border-brand-primary/10 rounded-xl">
                 <div className="flex gap-1">
                   {[1, 2, 3, 4].map(i => (
@@ -144,30 +135,14 @@ export function SmartInput() {
                 </div>
                 <span className="text-sm font-medium text-brand-primary animate-pulse uppercase tracking-widest text-[10px]">Listening to loose speech...</span>
               </div>
-            )}
-
-            {transformedPrompt && !isProcessing && (
+            ) : (
               <motion.div 
-                initial={{ opacity: 0, scale: 0.98 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-slate-900 border border-brand-secondary/30 rounded-2xl p-6 shadow-xl relative overflow-hidden"
+                className="px-6 py-3 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2"
               >
-                <div className="absolute top-0 left-0 w-1 h-full bg-brand-secondary"></div>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h4 className="text-xs font-mono uppercase tracking-widest text-brand-secondary font-bold mb-1">Official Formula Version</h4>
-                    <p className="text-[10px] text-slate-500 font-mono">Engine: Gemini-3.5-Flash Refinement</p>
-                  </div>
-                  <button 
-                    onClick={() => copyToClipboard(transformedPrompt)}
-                    className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-md transition-colors"
-                  >
-                    Copy Official
-                  </button>
-                </div>
-                <div className="text-sm text-slate-300 font-mono leading-relaxed italic whitespace-pre-wrap">
-                  "{transformedPrompt}"
-                </div>
+                <Sparkles size={14} />
+                Formula Builder Updated Successfully
               </motion.div>
             )}
           </motion.div>
