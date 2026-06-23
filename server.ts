@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -28,27 +28,55 @@ app.post("/api/transform-prompt", async (req, res) => {
       return res.status(400).json({ error: "Input is required" });
     }
 
-    const systemInstruction = `You are a master of Prompt Engineering (2026 Edition). 
-Your task is to take a "loose", informal, or spoken request and transform it into a highly structured, professional prompt using the Prompt Combiner Formula.
+    const systemInstruction = `You are a master of Prompt Engineering (2026 Edition).
+Your task is to take a "loose", informal, or spoken request and transform it into a highly structured, professional prompt using the Prompt Combiner Formula components.
 
-Formula: Role + Constraints + Technique + Examples + Task + Format
+Analyze the user's intent to extract or extrapolate:
+- A hyper-specific expert persona Role.
+- Robust constraints or anti-hallucination guardrails.
+- The single most logical 2026 reasoning technique (e.g., Chain-of-Thought, ReAct, Self-Consistency).
+- A few-shot template or realistic input-output examples if beneficial/applicable (keep concise).
+- The exact task/objective.
+- The optimum output style, template format, or structured schema.
 
-Output strictly a JSON object with the following keys:
-- role: string
-- constraints: string
-- technique: string
-- examples: string
-- task: string
-- format: string
-
-Do not add any preamble, explanation, or markdown code blocks. Just the raw JSON.`;
+Provide all of these structured variables inside the JSON response matching the schema.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash",
       contents: input,
       config: {
         systemInstruction,
         responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            role: {
+              type: Type.STRING,
+              description: "The ideal persona role with high authority (e.g. 'Senior PhD researcher with 20+ years of industrial experience')."
+            },
+            constraints: {
+              type: Type.STRING,
+              description: "Anti-hallucination guardrails, forbidden actions, or strict rules (e.g. 'Never extrapolate. Base answers strictly on contextual facts')."
+            },
+            technique: {
+              type: Type.STRING,
+              description: "A reasoning model technique to recommend, such as 'Chain-of-Thought strategy', 'Tree-of-thoughts', or 'Few-shot pattern matching'."
+            },
+            examples: {
+              type: Type.STRING,
+              description: "A short input -> output prompt example to guide the model, or empty if not needed."
+            },
+            task: {
+              type: Type.STRING,
+              description: "A precise, clean rendering of the main task/objective."
+            },
+            format: {
+              type: Type.STRING,
+              description: "Desired output template structural formatting rules (e.g. 'markdown hierarchy', 'valid raw JSON')."
+            }
+          },
+          required: ["role", "constraints", "technique", "examples", "task", "format"]
+        }
       },
     });
 
@@ -56,13 +84,14 @@ Do not add any preamble, explanation, or markdown code blocks. Just the raw JSON
       const data = JSON.parse(response.text);
       res.json(data);
     } catch (e) {
+      console.error("JSON parsing error on response text:", response.text);
       res.json({ 
-        role: "Expert Prompt Engineer",
-        constraints: "Be precise and structured.",
-        technique: "Chain-of-thought",
-        examples: "",
-        task: response.text,
-        format: "detailed report"
+        role: "Expert Prompt Engineer with 20 years domain depth",
+        constraints: "Never hallucinate. Stick to concrete data inputs.",
+        technique: "Step-by-step Chain-of-Thought reasoning",
+        examples: "Input: raw thoughts -> Output: optimized code",
+        task: input,
+        format: "A masterfully parsed hierarchical prompt draft"
       });
     }
   } catch (error: any) {

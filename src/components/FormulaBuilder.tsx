@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Copy, Check, Terminal } from 'lucide-react';
+import { Copy, Check, Terminal, FileDown } from 'lucide-react';
 import { FormulaState } from '../types';
 
 interface FormulaBuilderProps {
@@ -10,6 +10,7 @@ interface FormulaBuilderProps {
 
 export function FormulaBuilder({ state, onStateChange }: FormulaBuilderProps) {
   const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   const generatePrompt = () => {
     return `You are a ${state.role}. Always ${state.constraints}. 
@@ -25,6 +26,54 @@ After answering, critique your response in <thought> tags and improve if needed.
     navigator.clipboard.writeText(generatePrompt());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportMarkdown = () => {
+    const rawPrompt = generatePrompt();
+    const markdownContent = `# 📖 2026 Prompt Combiner Formula Export
+Generated using the Prompt Engineering Encyclopedia
+
+## 🎭 Expert Role & Persona
+> **Role:** ${state.role}
+
+## ⚖️ Core Constraints & Guardrails
+- ${state.constraints || "No strict constraints configured."}
+
+## 🧠 Reasoning Technique Recommendation
+- **Technique:** ${state.technique || "Direct zero-shot logic"}
+
+${state.examples ? `## 📋 Structured Examples / Few-shot Pairs\n\`\`\`text\n${state.examples}\n\`\`\`\n` : ''}
+
+## 🎯 Task & Main Objective
+> **Task:** ${state.task}
+
+## 📦 Requested Output Format
+- **Format:** ${state.format}
+
+---
+
+## 🚀 Compiled Standard Prompt String
+Below is your generated, highly optimized prompt. Copy and paste this directly into high-reasoning models (such as Gemini 3.5 Flash or Gemini 3.1 Pro Preview).
+
+\`\`\`text
+${rawPrompt}
+\`\`\`
+
+---
+*Optimized for 2026-era advanced LLMs with active self-critique capabilities.*
+`;
+
+    const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `prompt_combiner_${(state.task || "prompt").slice(0, 15).replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setDownloaded(true);
+    setTimeout(() => setDownloaded(false), 2000);
   };
 
   const updateField = (field: keyof FormulaState, value: string) => {
@@ -105,13 +154,23 @@ After answering, critique your response in <thought> tags and improve if needed.
           <div className="relative bg-slate-950 border border-slate-800 rounded-xl p-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs font-mono text-slate-500 uppercase tracking-tighter">Generated Final Prompt</span>
-              <button 
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium transition-colors shadow-lg"
-              >
-                {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-                {copied ? 'Copied' : 'Copy'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleExportMarkdown}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium transition-colors cursor-pointer shadow-lg"
+                  title="Export Prompt Formula Structure as Markdown (.md) File"
+                >
+                  {downloaded ? <Check size={14} className="text-green-400" /> : <FileDown size={14} />}
+                  {downloaded ? 'Downloaded' : 'Export MD'}
+                </button>
+                <button 
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs font-medium transition-colors cursor-pointer shadow-lg"
+                >
+                  {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
             </div>
             <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap leading-relaxed animate-in fade-in duration-500">
               {generatePrompt()}

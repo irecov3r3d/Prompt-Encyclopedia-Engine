@@ -1,6 +1,6 @@
 {
   "name": "Prompt Engineering Encyclopedia",
-  "description": "The definitive 2026 guide to prompt engineering: techniques, personas, modifiers, and templates for master-level AI interaction.",
+  "description": "The definitive 2026 guide to prompt engineering with AI-powered smart input, real-time formula building, and interactive audio guides.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
